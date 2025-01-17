@@ -1,28 +1,35 @@
 #!/bin/bash
-sudo apt update -y
-wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | tee /etc/apt/keyrings/adoptium.asc
-echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
-sudo apt update -y
-sudo apt install temurin-17-jdk -y
+
+# Update the package manager
+sudo yum update -y
+
+# Install Temurin 17 JDK
+sudo rpm --import https://packages.adoptium.net/artifactory/api/gpg/key/public
+sudo curl -o /etc/yum.repos.d/adoptium.repo https://packages.adoptium.net/artifactory/rpm/temurin.repo
+sudo yum install temurin-17-jdk -y
 /usr/bin/java --version
-curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
-echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt-get update -y
-sudo apt-get install jenkins -y
+
+# Install Jenkins
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo yum upgrade -y
+sudo yum install jenkins -y
+sudo systemctl enable jenkins
 sudo systemctl start jenkins
 sudo systemctl status jenkins
 
-#install docker
-sudo apt-get update
-sudo apt-get install docker.io -y
-sudo usermod -aG docker ubuntu  
+# Install Docker
+sudo yum install docker -y
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker ec2-user
 newgrp docker
 sudo chmod 777 /var/run/docker.sock
 docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
 
-# install trivy
-sudo apt-get install wget apt-transport-https gnupg lsb-release -y
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-sudo apt-get update
-sudo apt-get install trivy -y
+# Install Trivy
+sudo yum install wget -y
+sudo rpm --import https://aquasecurity.github.io/trivy-repo/rpm/public.key
+sudo curl -s -o /etc/yum.repos.d/trivy.repo https://aquasecurity.github.io/trivy-repo/rpm/releases.repo
+sudo yum install trivy -y
+
